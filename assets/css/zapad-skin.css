@@ -1,0 +1,40 @@
+/* ==========================================================================
+   МСК «ЗАПАД» — «кожа» для стандартных блоков Тильды.
+   Подключается на весь сайт вместе с zapad.css. Меняет только оформление
+   (шрифты, цвета, кнопки, скругления) — тексты, заголовки и адреса не трогает.
+   ========================================================================== */
+
+body.zp-skin{background:#F4F1EB}
+.zp-skin .t-records{background:transparent}
+
+/* шрифты */
+.zp-skin .t-text,.zp-skin .t-descr,.zp-skin .t-name,.zp-skin .t-uptitle,.zp-skin .t-btn,.zp-skin .t-btnflex,.zp-skin .t-submit,
+.zp-skin .t-store__card__title,.zp-skin .t-store__card__descr,.zp-skin .t-store__card__price,.zp-skin .t-feed__post-title,
+.zp-skin .t-redactor__text,.zp-skin .t-card__title,.zp-skin .t-card__descr,.zp-skin .t-input,.zp-skin .t-input-title,
+.zp-skin .t758__link-item,.zp-skin .t758__list_item,.zp-skin .tn-atom{font-family:Geologica,system-ui,sans-serif!important}
+.zp-skin .t-title,.zp-skin .t-section__title,.zp-skin .t-heading,.zp-skin .t-records h1,.zp-skin .t-records h2,.zp-skin .t-redactor__h2{
+  font-family:"Sofia XC","Arial Narrow",sans-serif!important;font-weight:800!important;text-transform:uppercase;letter-spacing:.004em;line-height:.95!important}
+.zp-skin .t-title strong,.zp-skin .t-section__title strong,.zp-skin .t-records h1 strong,.zp-skin .t-records h2 strong{color:inherit!important;font-weight:inherit}
+.zp-skin [style*="250, 210, 1"],.zp-skin [style*="#fad201"],.zp-skin [style*="#FAD201"]{color:#9A5B05!important}
+
+/* кнопки */
+.zp-skin .t-btn,.zp-skin .t-btnflex,.zp-skin .t-submit{border-radius:14px!important;font-weight:600!important;text-transform:none!important;letter-spacing:0!important;
+  background:#F2A62B!important;color:#17181A!important;border:0!important;box-shadow:none!important;transition:transform .25s,background-color .2s}
+.zp-skin .t-btn:hover,.zp-skin .t-btnflex:hover,.zp-skin .t-submit:hover{background:#FFB73D!important;transform:translateY(-2px)}
+.zp-skin .t-btn *,.zp-skin .t-btnflex *{color:inherit!important}
+
+/* карточки и картинки */
+.zp-skin .t-store__card,.zp-skin .t-card,.zp-skin .t-feed__post{border-radius:18px;overflow:hidden}
+.zp-skin .t-store__card__imgwrapper,.zp-skin .t-store__card__bgimg,.zp-skin .t-slds__bgimg,.zp-skin .t-bgimg,.zp-skin .t-img{border-radius:14px}
+.zp-skin .t-store__card__price{font-weight:700!important}
+
+/* хлебные крошки */
+.zp-skin .t758__list_item,.zp-skin .t758__link-item{font-size:13px!important;color:rgba(31,32,35,.6)!important}
+
+/* формы */
+.zp-skin .t-input{border-radius:12px!important}
+
+/* старые шапки, меню и подвал Тильды скрываются: вместо них шапка и подвал нового дизайна.
+   На Тильде это делается заменой содержимого страниц Header и Footer, правило ниже — только для предпросмотра. */
+.zp-skin [data-zp-old]{display:none!important}
+.zp-skin .t-records{padding-top:68px}
