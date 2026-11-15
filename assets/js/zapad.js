@@ -14,6 +14,18 @@
     });
   }
   var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+  /* маска телефона: +7 900 000-00-00 */
+  function maskTel(inp) {
+    if (inp.dataset.zpTel) return; inp.dataset.zpTel = '1';
+    inp.addEventListener('input', function () {
+      var d = inp.value.replace(/\D/g, '').replace(/^[78]/, '').slice(0, 10), o = '+7';
+      if (d.length) o += ' ' + d.slice(0, 3);
+      if (d.length > 3) o += ' ' + d.slice(3, 6);
+      if (d.length > 6) o += '-' + d.slice(6, 8);
+      if (d.length > 8) o += '-' + d.slice(8, 10);
+      inp.value = o;
+    });
+  }
   var ease = function (t) { return t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; };
 
   /* Когда блок появился в окне: один раз вызываем fn */
@@ -40,7 +52,8 @@
 
   /* ---------- кнопки: перекатывающийся текст, заливка из точки курсора, лёгкий «магнит» ---------- */
   var AR = '<svg class="zp-btn__ar" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
-  $$('.zp-btn').forEach(function (b) {
+  $$('.zp-btn').forEach(zpBtn);
+  function zpBtn(b) {
     if (b.dataset.zpBtn) return; b.dataset.zpBtn = '1';
     var ar = $('.zp-btn__ar', b); if (ar) ar.remove();
     var label = b.textContent.trim();
@@ -55,7 +68,7 @@
     b.addEventListener('pointerenter', at);
     b.addEventListener('pointermove', at);
     b.addEventListener('pointerleave', function (e) { at(e); });
-  });
+  }
 
   /* ---------- заголовки по словам и появление блоков ---------- */
   $$('[data-zp-split]').forEach(function (el) {
@@ -438,8 +451,105 @@
     var LIT = [5, 0, 9, 3, 7, 11, 1, 6, 10, 2, 8, 4];
     box.innerHTML = '<img class="zp-night__base" src="' + IMG + 's/n-base.webp" alt="" loading="lazy">' +
       NIGHT.map(function (_, i) { return '<img class="zp-night__l" src="' + IMG + 's/n-' + i + '.webp" alt="" loading="lazy" style="--k:' + LIT.indexOf(i) + '">'; }).join('');
-    $$('.zp-night__l', box).forEach(function (im, i) { place(im, NIGHT[i]); });
-    onView(box, function () { box.classList.add('is-lit'); }, { threshold: .3 });
+    var lamps = $$('.zp-night__l', box);
+    lamps.forEach(function (im, i) { place(im, NIGHT[i]); });
+    onView(box, function () {
+      box.classList.add('is-lit');
+      /* data-loop: окна продолжают гаснуть и загораться по одному, как фонарики */
+      if (!box.hasAttribute('data-loop') || reduced) return;
+      setTimeout(function () {
+        box.classList.add('is-looping');
+        setInterval(function () {
+          if (document.hidden) return;
+          var l = lamps[Math.floor(Math.random() * lamps.length)];
+          l.classList.add('is-off'); setTimeout(function () { l.classList.remove('is-off'); }, 700 + Math.random() * 900);
+        }, 1100);
+      }, 12 * 190 + 1500);
+    }, { threshold: .2 });
+  });
+
+  /* ---------- на телефоне длинные списки карточек листаются вбок: подсказка над ними ---------- */
+  $$('.zp-types,.zp-svc2,.zp-tech,.zp-factors').forEach(function (el) { el.insertAdjacentHTML('beforebegin', '<p class="zp-swipe" aria-hidden="true">Листайте карточки вбок</p>'); });
+
+  /* ---------- квиз: 7 шагов как в рабочем квизе Тильды ---------- */
+  $$('[data-zp-quiz]').forEach(function (root) {
+    var STEPS = [null,
+      { q: 'Какая нужна площадь дома?', d: 'Стоимость строительства будет зависеть от точной площади вашего будущего дома, укажите примерную площадь', o: ['До 100 м²', '100–130 м²', '130–150 м²', '150–200 м²', 'Более 200 м²'] },
+      { q: 'Сколько хотите этажей?', d: 'Цена на строительство зависит от этажности, укажите какое количество этажей вы хотите видеть в своём будущем доме', o: ['1 этаж', '1 с мансардой', '2 этажа', 'Пока не знаю'] },
+      { q: 'У вас есть дизайн-проект дома?', d: 'Любое строительство дома начинается с дизайн-проекта. У нас есть каталог с более чем 100 разными домами, которые мы сможем адаптировать под вас', o: ['Проект есть', 'Проекта нет', 'Есть примеры'] },
+      { q: 'У вас есть земельный участок?', d: 'Если участка нет, то мы поможем вам с подбором и покупкой идеально подходящего для вас участка. В нашем бюро более 500 участков', o: ['Участка нет', 'Участок есть в пригороде', 'Участок есть в области', 'Нужна помощь с подбором'] },
+      { q: 'Когда планируете стройку?', d: 'Мы расписываем свой рабочий график, чтобы сдавать все объекты вовремя, поэтому нам нужно понимать, когда вы планируете строительство', o: ['Как можно скорее', 'Ближайший месяц', 'В течение 2–3 месяцев', 'В течение 6 месяцев', 'Пока просто прицениваюсь'] },
+      { fin: true, q: 'Отлично! Остался последний шаг', d: 'Укажите ваш номер телефона, чтобы я отправил вам предварительный расчёт стоимости вашего дома' }];
+    var box = $('[data-zp-quiz-step]', root);
+    if (!box) return;
+    var q1 = $('.zp-quiz__q', box).textContent.replace(/^Вопрос 1 из 7\.\s*/, ''), opts1 = $('.zp-quiz__opts', box).outerHTML;
+    var cur = 0, ans = [], n = STEPS.length;
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
+    function foot(k) {
+      return '<div class="zp-quiz__foot"><button class="zp-quiz__back" type="button" data-zp-quiz-back' + (k ? '' : ' hidden') + '>← Назад</button>' +
+        '<div class="zp-quiz__bar"><i style="--p:' + ((k + 1) / n).toFixed(3) + '"></i></div><span class="zp-quiz__n">Шаг ' + (k + 1) + ' из ' + n + '</span>' +
+        (STEPS[k] && STEPS[k].fin ? '' : '<a class="zp-btn zp-btn--go" href="#raschet" data-zp-quiz-next>Далее</a>') + '</div>' +
+        (STEPS[k] && STEPS[k].fin ? '' : '<p class="zp-quiz__need" role="status">Выберите один из вариантов — нажмите на него</p>');
+    }
+    function render(k, focus) {
+      cur = k; root.classList.remove('is-need');
+      var s = STEPS[k], html;
+      if (!s) html = '<p class="zp-quiz__q">Вопрос 1 из ' + n + '. ' + esc(q1) + '</p>' + opts1;
+      else if (s.fin) html = '<p class="zp-quiz__q">' + esc(s.q) + '<small>' + esc(s.d) + '</small></p>' +
+        '<form class="zp-quiz__fin" data-zp-quiz-form novalidate><label class="zp-field">Как к вам обращаться<input type="text" name="name" autocomplete="name" placeholder="Имя"></label>' +
+        '<label class="zp-field">Телефон<input type="tel" name="phone" autocomplete="tel" inputmode="tel" placeholder="+7 900 000-00-00" required></label>' +
+        '<label class="zp-agree"><input type="checkbox" checked required><span>Я принимаю условия передачи информации</span></label>' +
+        '<button class="zp-btn zp-btn--go" type="submit">Получить расчёт</button></form>';
+      else html = '<p class="zp-quiz__q">Вопрос ' + (k + 1) + ' из ' + n + '. ' + esc(s.q) + '<small>' + esc(s.d) + '</small></p><div class="zp-quiz__opts zp-quiz__opts--txt">' +
+        s.o.map(function (o) { return '<button type="button" data-opt="' + esc(o) + '">' + esc(o) + '</button>'; }).join('') + '</div>';
+      box.innerHTML = html + foot(k);
+      box.style.animation = 'none'; void box.offsetWidth; box.style.animation = '';
+      $$('[data-opt]', box).forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.opt === ans[k])); });
+      $$('.zp-btn', box).forEach(zpBtn);
+      var tel = $('input[type="tel"]', box); if (tel) maskTel(tel);
+      if (focus) { var t = root.getBoundingClientRect().top; if (t < 0 || t > innerHeight * .5) root.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' }); }
+    }
+    root.addEventListener('click', function (e) {
+      var o = e.target.closest('[data-opt]'), nx = e.target.closest('[data-zp-quiz-next]'), bk = e.target.closest('[data-zp-quiz-back]');
+      if (o) { ans[cur] = o.dataset.opt; $$('[data-opt]', box).forEach(function (b) { b.setAttribute('aria-selected', String(b === o)); }); root.classList.remove('is-need'); return; }
+      if (nx) { e.preventDefault(); e.stopPropagation(); if (!ans[cur]) { root.classList.add('is-need'); return; } render(cur + 1, true); return; }
+      if (bk) { render(Math.max(0, cur - 1), true); }
+    });
+    root.addEventListener('submit', function (e) {
+      if (!e.target.matches('[data-zp-quiz-form]')) return;
+      e.preventDefault();
+      var tel = $('input[type="tel"]', e.target);
+      if (tel.value.replace(/\D/g, '').length < 11) { tel.focus(); tel.setCustomValidity('Введите номер полностью'); tel.reportValidity(); tel.setCustomValidity(''); return; }
+      e.target.outerHTML = '<div class="zp-quiz__ok" role="status"><b>Спасибо!</b> Ваши ответы: ' + esc(ans.filter(Boolean).join(' · ')) + '.<br>Это макет: заявка никуда не отправлена. На сайте здесь работает ваш квиз Тильды, и менеджер пришлёт расчёт.</div>';
+    });
+    render(0, false);
+  });
+
+  /* ---------- 3D-баня: поворот мышкой/пальцем и стрелками ---------- */
+  $$('[data-zp-b3d]').forEach(function (box) {
+    var obj = $('.zp-b3d__obj', box), ry = -35, rx = -13, drag = null, auto = !reduced, vis = false;
+    function set() { obj.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)'; }
+    function fit() { box.style.setProperty('--k', Math.min(.85, box.clientWidth / 780).toFixed(3)); }
+    set(); fit(); addEventListener('resize', fit);
+    box.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('button')) return;
+      drag = { x: e.clientX, y: e.clientY, ry: ry, rx: rx }; auto = false; box.classList.add('is-drag', 'is-used');
+      try { box.setPointerCapture(e.pointerId); } catch (er) {}
+    });
+    box.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      ry = drag.ry + (e.clientX - drag.x) * .5; rx = clamp(drag.rx - (e.clientY - drag.y) * .2, -34, 2); set();
+    });
+    ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { box.addEventListener(ev, function () { drag = null; box.classList.remove('is-drag'); }); });
+    $$('[data-zp-rot]', box).forEach(function (b) {
+      b.addEventListener('click', function () {
+        auto = false; box.classList.add('is-used'); ry += 45 * +b.dataset.zpRot;
+        obj.style.transition = 'transform .7s cubic-bezier(.2,.75,.2,1)'; set();
+        setTimeout(function () { obj.style.transition = ''; }, 720);
+      });
+    });
+    if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }).observe(box); else vis = true;
+    (function tick() { if (auto && vis && !drag) { ry += .14; set(); } requestAnimationFrame(tick); })();
   });
 
   /* ---------- формы и всплывающее окно ----------
@@ -461,16 +571,7 @@
       if (modal && (e.target === modal || (e.target.closest && e.target.closest('[data-zp-close]')))) close();
     });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
-    $$('input[type="tel"]').forEach(function (inp) {
-      inp.addEventListener('input', function () {
-        var d = inp.value.replace(/\D/g, '').replace(/^[78]/, '').slice(0, 10), o = '+7';
-        if (d.length) o += ' ' + d.slice(0, 3);
-        if (d.length > 3) o += ' ' + d.slice(3, 6);
-        if (d.length > 6) o += '-' + d.slice(6, 8);
-        if (d.length > 8) o += '-' + d.slice(8, 10);
-        inp.value = o;
-      });
-    });
+    $$('input[type="tel"]').forEach(maskTel);
     $$('form[data-zp-form]').forEach(function (form) {
       form.addEventListener('submit', function (e) {
         e.preventDefault();
