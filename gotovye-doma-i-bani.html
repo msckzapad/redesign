@@ -472,7 +472,7 @@
     </div>
     <div class="zp-conf" data-zp-conf>
       <div class="zp-conf__opts">
-        <p class="zp-howto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 013 0V11m0-1.5a1.5 1.5 0 013 0V11m0-1a1.5 1.5 0 013 0v4.5a6 6 0 01-6 6h-.8a6 6 0 01-4.6-2.1L4.2 14.6a1.6 1.6 0 012.4-2.1L9 15"/></svg><span>Нажимайте на варианты — баня на картинке сразу перекрасится. Её можно повернуть: потяните мышкой или нажмите на стрелки под ней.</span></p>
+        <p class="zp-howto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11V5.5a1.5 1.5 0 013 0V11m0-1.5a1.5 1.5 0 013 0V11m0-1a1.5 1.5 0 013 0v4.5a6 6 0 01-6 6h-.8a6 6 0 01-4.6-2.1L4.2 14.6a1.6 1.6 0 012.4-2.1L9 15"/></svg><span>Нажимайте на варианты — баня на картинке сразу изменится. Чтобы увидеть парную, печь и полки внутри, нажмите «В разрезе» или «Сверху». Баню можно повернуть: потяните пальцем или мышкой.</span></p>
         <fieldset><legend>Парная</legend><label class="zp-chip"><input type="radio" name="c-par" value="Русская баня" checked><span>Русская баня</span></label><label class="zp-chip"><input type="radio" name="c-par" value="Финская сауна"><span>Финская сауна</span></label></fieldset>
         <fieldset><legend>Печь</legend><label class="zp-chip"><input type="radio" name="c-pech" value="Дровяная" checked><span>Дровяная</span></label><label class="zp-chip"><input type="radio" name="c-pech" value="Электрическая"><span>Электрическая</span></label></fieldset>
         <fieldset><legend>Растопка</legend><label class="zp-chip"><input type="radio" name="c-ras" value="Снаружи" checked><span>Снаружи</span></label><label class="zp-chip"><input type="radio" name="c-ras" value="Изнутри"><span>Изнутри</span></label></fieldset>
@@ -494,6 +494,23 @@
           <div class="zp-b3d__scene">
             <div class="zp-b3d__obj">
               <div class="zp-b3d__ground"></div>
+              <!-- интерьер: виден в разрезе и сверху -->
+              <div class="zp-b3d__floor"></div>
+              <div class="zp-b3d__glow"></div>
+              <div class="zp-b3d__lin zp-b3d__lin--back"></div>
+              <div class="zp-b3d__lin zp-b3d__lin--sl"></div>
+              <div class="zp-b3d__lin zp-b3d__lin--sr"></div>
+              <div class="zp-b3d__lin zp-b3d__lin--rl"></div>
+              <div class="zp-b3d__lin zp-b3d__lin--rr"></div>
+              <div class="zp-b3d__lin zp-b3d__lin--front"></div>
+              <div class="zp-b3d__part"><i class="zp-b3d__pdoor"></i><i class="zp-b3d__fire zp-b3d__fire--out"></i></div>
+              <div class="zp-b3d__pl zp-b3d__pl--t1"></div><div class="zp-b3d__pl zp-b3d__pl--f1"><i class="zp-b3d__led"></i></div>
+              <div class="zp-b3d__pl zp-b3d__pl--t2"></div><div class="zp-b3d__pl zp-b3d__pl--f2"><i class="zp-b3d__led"></i></div>
+              <div class="zp-b3d__stove"><i class="zp-b3d__sf zp-b3d__sf--p"></i><i class="zp-b3d__sf zp-b3d__sf--b"><b class="zp-b3d__fire zp-b3d__fire--in"></b><b class="zp-b3d__ind"></b></i><i class="zp-b3d__sf zp-b3d__sf--r"></i><i class="zp-b3d__sf zp-b3d__sf--l"></i><i class="zp-b3d__sf zp-b3d__sf--top"></i></div>
+              <div class="zp-b3d__pipe"><i></i><i></i></div>
+              <div class="zp-b3d__steam"><s></s><s></s><s></s><s></s></div>
+              <div class="zp-b3d__tbl"></div><div class="zp-b3d__tbl zp-b3d__tbl--leg"></div>
+              <div class="zp-b3d__bench"></div><div class="zp-b3d__bench zp-b3d__bench--f"></div>
               <div class="zp-b3d__deck"></div>
               <div class="zp-b3d__f zp-b3d__front"><i class="zp-b3d__win"></i><i class="zp-b3d__win"></i></div>
               <div class="zp-b3d__f zp-b3d__back"></div>
@@ -504,6 +521,14 @@
               <div class="zp-b3d__chim"><i></i><i></i><i></i><i></i><b class="zp-b3d__smoke"><s></s><s></s><s></s></b></div>
             </div>
           </div>
+          <div class="zp-b3d__tags">
+            <span class="zp-b3d__lbl" data-pos="0,-150,-118" data-k="par">Парная</span>
+            <span class="zp-b3d__lbl" data-pos="0,-86,96">Комната отдыха</span>
+            <span class="zp-b3d__lbl" data-pos="55,-104,-72" data-k="pech">Печь</span>
+            <span class="zp-b3d__lbl zp-b3d__lbl--fire" data-pos="55,-30,-110" data-pos-out="55,-34,-20" data-k="ras">Топка</span>
+            <span class="zp-b3d__lbl" data-pos="-55,-46,-168" data-k="otd">Полки</span>
+          </div>
+          <div class="zp-b3d__views" role="tablist" aria-label="Как показать баню"><button type="button" role="tab" data-zp-view="out" aria-selected="true">Снаружи</button><button type="button" role="tab" data-zp-view="cut" aria-selected="false">В разрезе</button><button type="button" role="tab" data-zp-view="top" aria-selected="false">Сверху</button></div>
           <div class="zp-b3d__ctl"><button type="button" data-zp-rot="-1" aria-label="Повернуть влево">⟲</button><span>Потяните, чтобы повернуть</span><button type="button" data-zp-rot="1" aria-label="Повернуть вправо">⟳</button></div>
         </div>
         <p class="zp-conf__t">Ваша баня</p>
