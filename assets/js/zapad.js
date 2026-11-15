@@ -329,10 +329,22 @@
   $$('[data-zp-conf]').forEach(function (root) {
     var sum = $('[data-zp-conf-sum]', root), house = $('.zp-conf__house', root);
     var LABELS = { 'c-par': 'Парная', 'c-pech': 'Печь', 'c-ras': 'Растопка', 'c-otd': 'Отделка парной', 'c-col': 'Фасад' };
-    function render() {
-      sum.innerHTML = Object.keys(LABELS).map(function (n) { var i = $('input[name="' + n + '"]:checked', root); return '<li><span>' + LABELS[n] + '</span><b>' + (i ? i.value : '') + '</b></li>'; }).join('');
+    var val = function (n) { var i = $('input[name="' + n + '"]:checked', root); return i ? i.value : ''; };
+    var KEY = { 'c-par': 'par', 'c-pech': 'pech', 'c-ras': 'ras', 'c-otd': 'otd' };
+    function render(e) {
+      sum.innerHTML = Object.keys(LABELS).map(function (n) { return '<li><span>' + LABELS[n] + '</span><b>' + val(n) + '</b></li>'; }).join('');
       var col = $('input[name="c-col"]:checked', root); if (col) house.style.setProperty('--wall', col.dataset.c);
-      var pech = $('input[name="c-pech"]:checked', root); house.style.setProperty('--smoke', pech && pech.value === 'Дровяная' ? 1 : 0);
+      house.style.setProperty('--smoke', val('c-pech') === 'Дровяная' ? 1 : 0);
+      /* что выбрано — то и видно внутри 3D-бани */
+      house.dataset.par = val('c-par') === 'Финская сауна' ? 'fin' : 'rus';
+      house.dataset.pech = val('c-pech') === 'Электрическая' ? 'el' : 'wood';
+      house.dataset.ras = val('c-ras') === 'Изнутри' ? 'in' : 'out';
+      house.dataset.otd = val('c-otd') === 'Премиум' ? 'prem' : 'std';
+      if (house.zpLabels) house.zpLabels();
+      if (!e || !e.target || !e.target.name) return;
+      var k = KEY[e.target.name];
+      if (house.zpView) house.zpView(k ? (house.dataset.view === 'out' ? 'cut' : house.dataset.view) : 'out');
+      if (k) $$('.zp-b3d__lbl[data-k="' + k + '"]', house).forEach(function (l) { l.classList.remove('is-flash'); void l.offsetWidth; l.classList.add('is-flash'); });
     }
     root.addEventListener('change', render); render();
   });
@@ -471,6 +483,20 @@
   /* ---------- на телефоне длинные списки карточек листаются вбок: подсказка над ними ---------- */
   $$('.zp-types,.zp-svc2,.zp-tech,.zp-factors').forEach(function (el) { el.insertAdjacentHTML('beforebegin', '<p class="zp-swipe" aria-hidden="true">Листайте карточки вбок</p>'); });
 
+  /* ---------- подсказки прямо на иллюстрациях (видны только на телефоне, исчезают после первого касания) ---------- */
+  [['.zp-village', 'Нажмите на подпись дома', 'b'], ['.zp-stack', 'Нажмите на панель'], ['.zp-build__stage', 'Нажмите — дом соберётся'],
+   ['.zp-ba', 'Потяните жёлтый кружок', 'b'], ['.zp-works__main', 'Нажмите на фото ниже'], ['.zp-gal__main', 'Нажмите на фото ниже'],
+   ['.zp-layer2__panes', 'Выберите слой выше'], ['.zp-ser2__panes', 'Выберите серию выше'], ['.zp-rk-gal', 'Нажмите на фото — откроется крупно']
+  ].forEach(function (h) {
+    $$(h[0]).forEach(function (el) {
+      el.insertAdjacentHTML('beforeend', '<span class="zp-mhint' + (h[2] ? ' zp-mhint--' + h[2] : '') + '" aria-hidden="true"><i></i>' + h[1] + '</span>');
+      var hint = el.lastElementChild, zone = el.closest('[data-zp-sel],[data-zp-panel],[data-zp-build],[data-zp-gal],.zp-ba,.zp-rk-gal,.zp-works') || el;
+      zone.addEventListener('pointerdown', function () { hint.classList.add('is-gone'); }, { once: true });
+      /* длинная текстовая инструкция рядом на телефоне не нужна — подсказка уже на картинке */
+      var sec = el.closest('section'); if (sec) $$('.zp-howto', sec).forEach(function (p) { p.classList.add('zp-howto--desk'); });
+    });
+  });
+
   /* ---------- квиз: 7 шагов как в рабочем квизе Тильды ---------- */
   $$('[data-zp-quiz]').forEach(function (root) {
     var STEPS = [null,
@@ -527,29 +553,66 @@
 
   /* ---------- 3D-баня: поворот мышкой/пальцем и стрелками ---------- */
   $$('[data-zp-b3d]').forEach(function (box) {
-    var obj = $('.zp-b3d__obj', box), ry = -35, rx = -13, drag = null, auto = !reduced, vis = false;
-    function set() { obj.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)'; }
-    function fit() { box.style.setProperty('--k', Math.min(.85, box.clientWidth / 780).toFixed(3)); }
+    var obj = $('.zp-b3d__obj', box), ry = -35, rx = -13, drag = null, auto = !reduced, vis = false, tw = 0;
+    var lbls = $$('.zp-b3d__lbl', box), VIEW_RX = { out: -13, cut: -34, top: -88 };
+    /* подписи лежат плоским слоем поверх модели: точку из 3D пересчитываем в координаты экрана,
+       поэтому подпись никогда не прячется за стенами и полками */
+    var scene = $('.zp-b3d__scene', box), PERSP = 1200;
+    function set() {
+      obj.style.transform = 'rotateX(' + rx.toFixed(2) + 'deg) rotateY(' + ry.toFixed(2) + 'deg)';
+      if (!lbls.length) return;
+      var W = box.clientWidth, H = box.clientHeight, cs = getComputedStyle(scene), m = /matrix\(([^,]+)/.exec(cs.transform), s = m ? +m[1] : 1;
+      var cx = W / 2, cy = parseFloat(cs.top) || H * .66, ox = W / 2, oy = H * .3;
+      var a = rx * Math.PI / 180, b = ry * Math.PI / 180, ca = Math.cos(a), sa = Math.sin(a), cb = Math.cos(b), sb = Math.sin(b);
+      lbls.forEach(function (l) {
+        var p = ((box.dataset.ras === 'out' && l.dataset.posOut) || l.dataset.pos).split(',').map(Number); if (box.dataset.view === 'top') p[1] *= .2;
+        var x1 = p[0] * cb + p[2] * sb, z1 = -p[0] * sb + p[2] * cb, y2 = p[1] * ca - z1 * sa, z2 = p[1] * sa + z1 * ca;
+        var X = cx + s * x1, Y = cy + s * y2, Z = s * z2, f = PERSP / (PERSP - Z);
+        l.style.transform = 'translate3d(' + (ox + (X - ox) * f).toFixed(1) + 'px,' + (oy + (Y - oy) * f).toFixed(1) + 'px,0) translate(-50%,-50%)';
+      });
+    }
+    function fit() { var w = box.clientWidth; box.style.setProperty('--k', Math.min(.85, w / (w < 520 ? 520 : 780)).toFixed(3)); set(); }
+    /* плавный поворот к нужному виду */
+    function tween(trx, try_) {
+      cancelAnimationFrame(tw);
+      var r0 = rx, y0 = ry, t0 = performance.now(), ms = reduced ? 1 : 750;
+      (function step(now) {
+        var t = clamp((now - t0) / ms, 0, 1), e = ease(t);
+        rx = r0 + (trx - r0) * e; ry = y0 + (try_ - y0) * e; set();
+        if (t < 1) tw = requestAnimationFrame(step);
+      })(t0);
+    }
+    var vbtn = $$('[data-zp-view]', box);
+    box.zpView = function (v) {
+      if (box.dataset.view === v) return;
+      box.dataset.view = v;
+      vbtn.forEach(function (b) { b.setAttribute('aria-selected', String(b.dataset.zpView === v)); });
+      if (v === 'top') { auto = false; tween(VIEW_RX.top, Math.round(ry / 360) * 360); }
+      else tween(VIEW_RX[v], ry);
+    };
+    box.zpLabels = set;
+    scene.addEventListener('transitionend', set);   /* после смены вида сцена доезжает — подписи ставим точно на место */
+    vbtn.forEach(function (b) { b.addEventListener('click', function () { box.classList.add('is-used'); box.zpView(b.dataset.zpView); }); });
+    box.dataset.view = 'out';
     set(); fit(); addEventListener('resize', fit);
     box.addEventListener('pointerdown', function (e) {
       if (e.target.closest('button')) return;
+      cancelAnimationFrame(tw);
       drag = { x: e.clientX, y: e.clientY, ry: ry, rx: rx }; auto = false; box.classList.add('is-drag', 'is-used');
       try { box.setPointerCapture(e.pointerId); } catch (er) {}
     });
     box.addEventListener('pointermove', function (e) {
       if (!drag) return;
-      ry = drag.ry + (e.clientX - drag.x) * .5; rx = clamp(drag.rx - (e.clientY - drag.y) * .2, -34, 2); set();
+      ry = drag.ry + (e.clientX - drag.x) * .5; rx = clamp(drag.rx - (e.clientY - drag.y) * .2, -89, 2); set();
     });
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(function (ev) { box.addEventListener(ev, function () { drag = null; box.classList.remove('is-drag'); }); });
     $$('[data-zp-rot]', box).forEach(function (b) {
       b.addEventListener('click', function () {
-        auto = false; box.classList.add('is-used'); ry += 45 * +b.dataset.zpRot;
-        obj.style.transition = 'transform .7s cubic-bezier(.2,.75,.2,1)'; set();
-        setTimeout(function () { obj.style.transition = ''; }, 720);
+        auto = false; box.classList.add('is-used'); tween(rx, ry + 45 * +b.dataset.zpRot);
       });
     });
     if ('IntersectionObserver' in window) new IntersectionObserver(function (es) { vis = es[0].isIntersecting; }).observe(box); else vis = true;
-    (function tick() { if (auto && vis && !drag) { ry += .14; set(); } requestAnimationFrame(tick); })();
+    (function tick() { if (auto && vis && !drag && box.dataset.view !== 'top') { ry += .14; set(); } requestAnimationFrame(tick); })();
   });
 
   /* ---------- формы и всплывающее окно ----------
